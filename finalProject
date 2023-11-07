@@ -1,0 +1,73 @@
+import redis
+
+r = redis.Redis(
+  host='redis-18834.c239.us-east-1-2.ec2.cloud.redislabs.com',
+  port=18834,
+  password='ekUbUCmZsmKKRzXqpUi49hm3dMWLjJP1')
+
+# Funcion para crear una nueva tarea
+def create_task(task_id, task_description):
+    r.hset('tasks', task_id, task_description)
+    r.sadd('task_ids', task_id)
+
+# Funcion para leer todas las tareas
+def read_tasks():
+    task_ids = r.smembers('task_ids')
+    tasks = {}
+    for task_id in task_ids:
+        task_description = r.hget('tasks', task_id)
+        tasks[task_id.decode('utf-8')] = task_description.decode('utf-8')
+    return tasks
+
+# Funcion para actualizar una tarea existente
+def update_task(task_id, new_description):
+    if r.hexists('tasks', task_id):
+        r.hset('tasks', task_id, new_description)
+    else:
+        print("Tarea no encontrada")
+
+# Funcion para eliminar una tarea existente
+def remove_task(task_id):
+    if r.hexists('tasks', task_id):
+        r.hdel('tasks', task_id)
+        r.srem('task_ids', task_id)
+    else:
+        print("Tarea no encontrada")
+
+if __name__ == '__main__':
+    while True:
+        print("\n1. Crear una nueva tarea")
+        print("2. Leer tareas")
+        print("3. Completar tarea")
+        print("4. Eliminar tarea")
+        print("5. Salir")
+        choice = input("Ingrese una opcion: ")
+
+        if choice == '1':
+            task_id = input("Ingrese un id unico: ")
+            task_description = input("Ingrese una descripcion: ")
+            create_task(task_id, task_description)
+            print("Tarea creada.")
+
+        elif choice == '2':
+            tasks = read_tasks()
+            print("Lista:")
+            for task_id, task_description in tasks.items():
+                print(f"{task_id}: {task_description}")
+
+        elif choice == '3':
+            task_id = input("Ingrese el id de la tarea a completar: ")
+            new_description = input("Ingrese una nueva descripcion de la tarea a completar: ")
+            update_task(task_id, new_description)
+            print("Tarea completada correctamente.")
+
+        elif choice == '4':
+            task_id = input("Ingrese el id a eliminar: ")
+            remove_task(task_id)
+            print("Tarea eliminada ....")
+
+        elif choice == '5':
+            break
+
+        else:
+            print("Opcion invalida.")
